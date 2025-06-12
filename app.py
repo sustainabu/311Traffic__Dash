@@ -20,26 +20,27 @@ _dash_renderer._set_react_version("18.2.0")
 
 # Load data
 df = pd.read_csv(
-    "https://raw.githubusercontent.com/sustainabu/OpenDataNYC/refs/heads/main/311_BlockedBikeLane/dfc_out.csv"
+    "https://raw.githubusercontent.com/sustainabu/311Traffic__Dash/main/data.csv.gz"
 )
 
 # Data type adjustments
 df["dateTime"] = pd.to_datetime(df["dateTime"]).dt.date
 df["index_"] = df["index_"].astype(int)
 df["MinutesElapsed"] = df["MinutesElapsed"].astype(float)
-update_date = date(2024, 12, 31) #Update Date
+update_date = date(2025, 6, 11) #Update Date
 
 # Dropdown options
 board_options = ["All"] + sorted(df["cboard_expand"].dropna().unique().astype(str))
+
+# Request Dropdown option
+request_options = sorted(df["descriptor"].dropna().unique().astype(str))
 
 # Initialize Dash app
 app = Dash(__name__, suppress_callback_exceptions=True, external_stylesheets=dmc.styles.ALL,
            meta_tags=[{'name': 'viewport', 'content': 'width=device-width, initial-scale=1'}])
 server = app.server
 
-app.title = "311 Blocked Bike Lane Dashboard" 
-
-
+app.title = "311 Traffic Enforcement Dashboard" 
 
 
 # App layout
@@ -50,7 +51,7 @@ app.layout = dmc.MantineProvider(
             # Burger button with a drawer
             dmc.Group([
                 dmc.Burger(id="burger-menu", opened=False,color="purple"),
-                dmc.Text("311 Blocked Bike Lane Dashboard", size="xl")
+                dmc.Text("311 Traffic Enforcement Dashboard", size="xl")
             ], style={"alignItems": "center", "marginBottom": "20px", "backgroundColor": "#DABC94"}),
 
             # Drawer for navigation menu
@@ -94,8 +95,8 @@ app.layout = dmc.MantineProvider(
                                         id="start-date",
                                         label="Start Date",
                                         #description="Select the start date",
-                                        value=date(2023, 1, 1).isoformat(),
-                                        minDate=date(2021, 1, 1).isoformat(),
+                                        value=date(2025, 1, 1).isoformat(),
+                                        minDate=date(2025, 1, 1).isoformat(),
                                         maxDate=update_date.isoformat(),
                                         style={"marginRight": "20px", "marginBottom": "5px"}
                                     ),
@@ -105,12 +106,12 @@ app.layout = dmc.MantineProvider(
                                         label="End Date",
                                         #description="Select the end date",
                                         value=update_date.isoformat(),
-                                        minDate=date(2021, 1, 1).isoformat(),
+                                        minDate=date(2025, 1, 1).isoformat(),
                                         maxDate=update_date.isoformat(),
                                         style={"marginBottom": "20px"}
                                     ),
                                 ], style={"display": "flex", "flexDirection": "row", "marginBottom": "2px"}),
-                                # Dropdown
+                                # Community Dropdown
                                 html.Div([
                                     dmc.Select(
                                         id="dropdown",
@@ -127,8 +128,27 @@ app.layout = dmc.MantineProvider(
                                             "hover": {"backgroundColor": "#cceeff"}  # Hover effect for dropdown items
                                         }
                                     ),                                
+                                ]),
+                                # Request Dropdown
+                                html.Div([
+                                    dmc.Select(
+                                        id="dropdown",
+                                        label="Select Violation",
+                                        placeholder="Choose an option",
+                                        data=[{"label": opt, "value": opt} for opt in request_options],
+                                        value="All",
+                                        clearable=True,
+                                        style={"width": "300px", "marginBottom": "2px"},  # General styling
+                                        styles={
+                                            "input": {"backgroundColor": "#f0f8ff"},  # Background color for the input box
+                                            "dropdown": {"backgroundColor": "#d1ffbd"},  # Background color for the dropdown menu
+                                            "item": {"color": "#000", "padding": "8px"},  # Styling for dropdown items
+                                            "hover": {"backgroundColor": "#cceeff"}  # Hover effect for dropdown items
+                                        }
+                                    ),                                
                                 ])
                             ]),
+                            #Reporting
                             html.Div(className="container", children=[
                                 dcc.Markdown("### How does NYPD respond?", style={'textAlign': 'center'}),
                                 dcc.Markdown("**Note:** No specific action or reason is given for Action or No-Action category. A 'Summon' is similar to a fined ticket"),
@@ -156,57 +176,6 @@ app.layout = dmc.MantineProvider(
                                             "displayModeBar": False,  # Enable the mode bar for other features
                                             "staticPlot": True ,
                                         }),
-                                ]),
-                            ]),
-                            html.Div(className="container", children=[
-                                dcc.Markdown("### Are NYPD responsive if multiple requests were made (i.e. call-density)?", style={'textAlign': 'center'}),
-                                html.Div([
-                                    dcc.RadioItems(
-                                        id="radio2",
-                                        options=[
-                                            {"label": "Summary", "value": "dist"},
-                                            {"label": "Resolution", "value": "resolution"},
-                                            {"label": "Response Time", "value": "time"},
-                                        ],
-                                        value="dist",
-                                        inline=True,
-                                        className="dash-radioitems",
-                                    ),
-                                    dcc.Graph(
-                                        id="density_bar",
-                                        config={
-                                            "scrollZoom": False,      # Disable zoom with scrolling
-                                            "doubleClick": "reset",  # Reset the plot on double-click
-                                            "displayModeBar": False,  # Enable the mode bar for other features
-                                            "staticPlot": True,
-                                            }
-                                    ),
-                                ]),
-                            ]),
-                            # History Graph
-                            html.Div(className="container", children=[
-                                dcc.Markdown("### What are the trends?", style={'textAlign': 'center'}),
-                                dcc.Markdown("**Note: (*) symbol** indicate adjustment for double-counting"),
-                                html.Div([
-                                    dcc.RadioItems(
-                                        id="radio3",
-                                        options=[
-                                            {"label": "Requests", "value": "request"},
-                                            {"label": "InAction-Rate*", "value": "inaction"},
-                                        ],
-                                        value="request",
-                                        inline=True,
-                                        className="dash-radioitems",
-                                    ),
-                                    dcc.Graph(
-                                        id="history",
-                                        config={
-                                            "scrollZoom": False,      # Disable zoom with scrolling
-                                            "doubleClick": "reset",  # Reset the plot on double-click
-                                            "displayModeBar": True,  # Enable the mode bar for other features
-                                            "staticPlot": True,
-                                            }
-                                    ),
                                 ]),
                             ]),
                             #Interactive Map
@@ -634,394 +603,6 @@ def bar_graph(start_date, end_date, board, choice):
     #Select by Radio Button
     return fig2 if choice != "stat" else fig1
 
-#C3 Density
-@callback(
-    Output("density_bar", "figure"),
-    [Input('start-date', 'value'), 
-     Input('end-date', 'value'), 
-     Input("dropdown", "value"),
-     Input("radio2", "value")
-     ]
-)
-def density_graph(start_date, end_date, board, choice):
-    # Ensure start_date and end_date are valid
-    if start_date is None:
-        start_date = date(2023, 1, 1)  # Default to the minimum date in the dataset
-    else:
-        start_date = pd.to_datetime(start_date).date()
-
-    if end_date is None:
-        end_date = date(2024, 12, 31)  # Default to the maximum date in the dataset
-    else:
-        end_date = pd.to_datetime(end_date).date()
-
-    # Apply all filters: community board and date range
-    filtered_df = df.copy()
-    if board != "All":
-        filtered_df = filtered_df[filtered_df["cboard_expand"] == board]
-
-    filtered_df = filtered_df[
-        (filtered_df["dateTime"] >= start_date) &
-        (filtered_df["dateTime"] <= end_date)
-    ]
-
-    # Shortcut Renaming
-    def boardT():
-        if board != "All":
-            return board.split(':')[0]
-        else:
-            return "All"
-
-    # Predefined resolution categories and elapsed minute bins    
-    dfc_unique= filtered_df.query('MinutesElapsed==MaxR_Mins')
-    all_repeat = ["1", "2", "3", "4","5+"]  # Add all possible resolution values here
-    resolution_bins = ["Action", "Late", "No-Action", "Summon"]  # Define all bins
-    elapsed_bins = ["min0->5", "min5->30", "min30->60", "min60->360", "min360+"]  # Define all bins
-    
-    # Step 1: Aggregate Total, Median, and Mean
-    cols_total = ["RepeatBin", "index_"]
-    cols_elapsed = ["RepeatBin", "MinutesElapsed"]
-    
-    # Total count with predefined categories
-    df_total = dfc_unique[cols_total].groupby("RepeatBin", observed=False).sum()
-    df_total = df_total.reindex(all_repeat, fill_value=0).reset_index()
-    df_total.columns = ["RepeatBin", "Total"]
-
-    # Side Step to create 1 Fig 1
-    # Group data for pie chart
-    grouped_data = (
-        dfc_unique.groupby("RepeatBin")["index_"]
-        .sum()
-        .reset_index()
-        .rename(columns={"index_": "Count"})
-    )
-    # Create pie chart
-    fig1 = px.pie(
-        grouped_data,
-        names="RepeatBin",
-        values="Count",
-        title=f"Total Call-Density for {boardT()}: {dfc_unique['index_'].sum()}"
-    )
-
-    # Adjust the layout for the legend
-    fig1.update_layout(
-        legend=dict(
-            orientation='h',  # Horizontal legend
-            yanchor='top',
-            y=-0.15,  # Position below the chart
-            xanchor='center',
-            x=0.5  # Centered horizontally
-        ),
-        title_x=0.5,
-        margin=dict(t=50, b=100)  # Adjust margins to make space for the legend
-    )
-
-    # Step 2: Create Binned Count with all bins included
-    bins_cols = ["RepeatBin", "resolution", "index_"]
-    
-    # Group and pivot with predefined bins
-    df_bins = dfc_unique[bins_cols].groupby(["RepeatBin", "resolution"]).sum().reset_index()
-    df_bins["resolution"] = pd.Categorical(df_bins["resolution"], categories=resolution_bins, ordered=True)
-    df_bins = df_bins.pivot_table(index="RepeatBin", columns="resolution", values="index_", fill_value=0,observed=False).reset_index()
-    
-    # Ensure all bins are included
-    df_bins = df_bins.reindex(columns=["RepeatBin"] + resolution_bins, fill_value=0)
-    
-    # Merge binned data with aggregated data
-    result_df = pd.merge(df_total, df_bins, on="RepeatBin", how="left")
-    result_df.columns = ["RepeatBin", "Total"] + resolution_bins
-    
-    # Step 2: Create Binned Count with all bins included
-    bins_cols = ["RepeatBin", "ElapsedMinuteBin", "index_"]
-    
-    # Group and pivot with predefined bins
-    df_bins = dfc_unique[bins_cols].groupby(["RepeatBin","ElapsedMinuteBin"]).sum().reset_index()
-    df_bins["ElapsedMinuteBin"] = pd.Categorical(df_bins["ElapsedMinuteBin"], categories=elapsed_bins, ordered=True)
-    df_bins = df_bins.pivot_table(index="RepeatBin", columns="ElapsedMinuteBin", values="index_", fill_value=0, observed=False).reset_index()
-    
-    # Ensure all bins are included
-    df_bins = df_bins.reindex(columns=["RepeatBin"] + elapsed_bins, fill_value=0)
-    
-    # Merge binned data with aggregated data
-    result1_df = pd.merge(result_df, df_bins, on="RepeatBin", how="left")
-    result1_df.columns = ["Call-Density", "Total","Action","Late","No-Action","Summon"] + elapsed_bins
-    
-    # Step 3: Add Citywide Totals
-    city_data = [
-        "All",
-        result1_df["Total"].sum(),
-        *[result1_df[bin].sum() for bin in resolution_bins],
-        *[result1_df[bin].sum() for bin in elapsed_bins],
-    ]
-    
-    citywide_df = pd.DataFrame([city_data], columns=result1_df.columns)
-    
-    # Combine aggregated data with citywide totals
-    final_df = pd.concat([result1_df, citywide_df], ignore_index=True)
-
-    
-    # Step 4: Calculate percentages for binned columns
-    final_bin=[ "Late", "No-Action","Action", "Summon","min0->5", "min5->30", "min30->60", "min60->360", "min360+"]
-    
-    for col in final_bin:
-        final_df[col] = (
-            final_df[col]
-            .div(final_df["Total"])
-            .fillna(0)
-            .mul(100)
-            .round(1)  # Round to one decimal place
-        )
-    
-    ## horizontal graph
-    fig2 = go.Figure()
-    fig2.add_trace(go.Bar(
-        y=final_df["Call-Density"],
-        x=final_df['Late'],
-        name='Late',
-        orientation='h',
-        textposition='inside',  # Position the text inside the bars
-    ))
-
-    fig2.add_trace(go.Bar(
-        y=final_df["Call-Density"],
-        x=final_df['No-Action'],
-        name='No-Action',
-        orientation='h',
-        textposition='inside',  # Position the text inside the bars
-    ))
-
-    fig2.add_trace(go.Bar(
-        y=final_df["Call-Density"],
-        x=final_df['Action'],
-        name='Action',
-        orientation='h',
-        textposition='inside',  # Position the text inside the bars
-    ))
-    fig2.add_trace(go.Bar(
-        y=final_df["Call-Density"],
-        x=final_df['Summon'],
-        name='Summon',
-        orientation='h',
-        textposition='inside',  # Position the text inside the bars
-    ))
-
-    quarters = ['5+','4','3','2','1']
-
-    fig2.update_layout(
-        xaxis=dict(ticksuffix='%'),
-        yaxis=dict(categoryorder='array', categoryarray=quarters),
-        barmode='stack',
-        template='plotly_white',
-        yaxis_title= 'Call-Density',
-        legend=dict(
-            orientation='h',  # Horizontal legend
-            yanchor='bottom',
-            y=-0.25,  # Position below the chart
-            xanchor='center',
-            x=0.5,  # Centered horizontally
-            traceorder='normal'
-        ),
-        margin = dict(l=10, r=10, t=10, b=10)
-    )
-
-    ## horizontal graph
-    fig3 = go.Figure()
-    fig3.add_trace(go.Bar(
-        y=final_df["Call-Density"],
-        x=final_df['min0->5'],
-        name='Min_0->5',
-        orientation='h',
-        textposition='inside',  # Position the text inside the bars
-    ))
-
-    fig3.add_trace(go.Bar(
-        y=final_df["Call-Density"],
-        x=final_df['min5->30'],
-        name='Min_5->30',
-        orientation='h',
-        textposition='inside',  # Position the text inside the bars
-    ))
-
-    fig3.add_trace(go.Bar(
-        y=final_df["Call-Density"],
-        x=final_df['min30->60'],
-        name='Min_30->60',
-        orientation='h',
-        textposition='inside',  # Position the text inside the bars
-    ))
-    fig3.add_trace(go.Bar(
-        y=final_df["Call-Density"],
-        x=final_df['min60->360'],
-        name='Min_60->360',
-        orientation='h',
-        textposition='inside',  # Position the text inside the bars
-    ))
-    fig3.add_trace(go.Bar(
-        y=final_df["Call-Density"],
-        x=final_df['min360+'],
-        name='Min_360+',
-        orientation='h',
-        textposition='inside',  # Position the text inside the bars
-    ))
-
-    quarters = ['5+','4','3','2','1']
-
-    fig3.update_layout(
-        xaxis=dict(ticksuffix='%'),
-        yaxis=dict(categoryorder='array', categoryarray=quarters),
-        barmode='stack',
-        template='plotly_white',
-        yaxis_title= 'Call-Density',
-        legend=dict(
-            orientation='h',  # Horizontal legend
-            yanchor='bottom',
-            y=-0.25,  # Position below the chart
-            xanchor='center',
-            x=0.5,  # Centered horizontally
-            traceorder='normal'
-        ),
-        margin = dict(l=10, r=10, t=10, b=10),
-    )
-
-    #Select by Radio Button
-    if choice== "resolution":
-        return fig2
-    elif choice== "time":
-        return fig3
-    else:
-        return fig1
-
-#c4 History    
-@callback(
-    Output("history", "figure"),
-    [Input('start-date', 'date'), 
-     Input('end-date', 'date'), 
-     Input("dropdown", "value"),
-     Input("radio3", "value")
-     ]
-)
-def history_graph(start_date, end_date, board, choice):
-    # Ensure start_date and end_date are valid
-    if start_date is None:
-        start_date = date(2023, 1, 1)  # Default to the minimum date in the dataset
-    else:
-        start_date = pd.to_datetime(start_date).date()
-
-    if end_date is None:
-        end_date = date(2024, 12, 31)  # Default to the maximum date in the dataset
-    else:
-        end_date = pd.to_datetime(end_date).date()
-
-    # Apply all filters: community board and date range
-    filtered_df = df.copy()
-    if board != "All":
-        filtered_df = filtered_df[filtered_df["cboard_expand"] == board]
-
-    filtered_df = filtered_df[
-        (filtered_df["dateTime"] >= start_date) &
-        (filtered_df["dateTime"] <= end_date)
-    ]
-
-    # Shortcut Renaming
-    def boardT():
-        if board != "All":
-            return board.split(':')[0]
-        else:
-            return "All"
-
-    custom_palette = [ "#ff7f0e","#1f77b4", "#2ca02c", "#d62728", "#9467bd"]
-    current_year = filtered_df.Year.max() 
-
-    #filtered_df["Inaction"]= filtered_df["Late"] + filtered_df["No-Action"]
-    
-    #Inaction Df use Unique Values
-    dfc_unique= filtered_df.query('MinutesElapsed==MaxR_Mins')
-    p=['']
-    # Get Total by Precinct
-    p=['WeekBin', 'Year','Late', 'No-Action','index_']
-    df1=dfc_unique[p].groupby(['WeekBin','Year']).sum().reset_index()
-    df1.columns=['WeekBin','Year','Late','No-Action','total']
-    df1['InAction_Rate']= round((df1['Late'] +df1['No-Action']) / df1['total'],2)
-
-    # Choose plot data based on radio choice
-    if choice == 'request':
-        bg = filtered_df.groupby(['WeekBin', 'Year'])['index_'].sum().unstack()
-        traces = []
-        nl = '<br>'  # HTML line break for Plotly titles
-        for year in bg.columns:
-            linestyle = 'solid' if year == current_year else 'dash'
-            traces.append(go.Scatter(
-                x=bg.index, y=bg[year],
-                mode='lines',
-                name=str(year),
-                line=dict(dash=linestyle, color=custom_palette[year % len(custom_palette)])
-            ))
-        title = f"<b>Requests History for {boardT()}{nl}from {start_date} to {end_date}</b>"
-
-        # Create Plotly figure
-        figure = go.Figure(data=traces)
-        figure.update_layout(
-            title=dict(
-                text=title,
-                font=dict(size=14),  # Adjust font size
-                x=0.5,               # Center align the title
-                xanchor='center',
-                yanchor='top',
-            ),
-            xaxis_title='WeekBin (0 = beginning of year)',
-            yaxis_title='',
-            legend_title='',
-            template='plotly_white',
-            legend=dict(
-                orientation='h',  # Horizontal legend
-                yanchor='bottom',
-                y=-0.25,  # Position below the chart
-                xanchor='center',
-                x=0.5,  # Centered horizontally
-                traceorder='normal'
-            ),
-            margin=dict(l=10, r=10, t=80, b=10)  # Add padding to the top with `t`
-        )
-
-    else:
-        traces = []
-        nl = '<br>'  # HTML line break for Plotly titles
-        for year in df1['Year'].unique():
-            df_year = df1[df1['Year'] == year]
-            linestyle = 'solid' if year == current_year else 'dash'
-            traces.append(go.Scatter(
-                x=df_year['WeekBin'], y=df_year['InAction_Rate'],
-                mode='lines',
-                name=str(year),
-                line=dict(dash=linestyle, color=custom_palette[year % len(custom_palette)])
-            ))
-        title = f"<b>InAction Rate History for {boardT()}{nl} from {start_date} to {end_date}</b>"
-
-        # Create Plotly figure
-        figure = go.Figure(data=traces)
-        figure.update_layout(
-            title=dict(
-                text=title,
-                font=dict(size=14),  # Adjust font size
-                x=0.5,               # Center align the title
-                xanchor='center',
-                yanchor='top',
-            ),
-            xaxis_title='WeekBin (0 = beginning of year)',
-            yaxis_title='',
-            legend_title='',
-            legend=dict(
-                orientation='h',  # Horizontal legend
-                yanchor='bottom',
-                y=-0.25,  # Position below the chart
-                xanchor='center',
-                x=0.5,  # Centered horizontally
-                traceorder='normal'
-            ),
-            template='plotly_white',
-            margin=dict(l=10, r=10, t=80, b=10)  # Add padding to the top with `t`
-        )
-    return figure
 
 #Callback for Folium Map
 @callback(
@@ -1215,12 +796,12 @@ def folium_map(start_date, end_date, board, slide,choice):
 def recent_table(start_date, end_date, board):
     # Ensure start_date and end_date are valid
     if start_date is None:
-        start_date = date(2023, 1, 1)  # Default to the minimum date in the dataset
+        start_date = date(2025, 1, 1)  # Default to the minimum date in the dataset
     else:
         start_date = pd.to_datetime(start_date).date()
 
     if end_date is None:
-        end_date = date(2024, 12, 31)  # Default to the maximum date in the dataset
+        end_date = date(2025, 6, 11)  # Default to the maximum date in the dataset
     else:
         end_date = pd.to_datetime(end_date).date()
 
@@ -1235,8 +816,8 @@ def recent_table(start_date, end_date, board):
     ]
 
     # Select relevant columns for the table
-    recent_df = filtered_df[['dateTime', 'Time', 'incident_address','precinct','resolution', 'MinutesElapsed']]
-    recent_df.columns = ['Date', 'Time','Address','Precinct', 'Resolution', 'Response_Mins']
+    recent_df = filtered_df[['dateTime', 'Time', 'incident_address','precinct','resolution', 'MinutesElapsed', 'Resolution_desc']]
+    recent_df.columns = ['Date', 'Time','Address','Precinct', 'Resolution', 'Response_Mins', 'Resolution_Full']
     
     return recent_df.to_dict('records')
 
