@@ -1,0 +1,97 @@
+.container {
+    max-width: 90%;
+    margin: auto;
+    padding: 15px;
+    border: 1px solid #e15959;
+    border-radius: 5px;
+    background-color: #c6e1f7;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+@media screen and (max-width: 768px) {
+    .container {
+        padding: 10px;
+        margin: 10px;
+    }
+}
+
+
+
+/* General styling for the radio buttons container */
+div.dash-radioitems {
+    display: flex;
+    justify-content: left;
+    margin: 10px 0;
+}
+
+/* Styling for each radio button label */
+div.dash-radioitems label {
+    display: inline-block;
+    background-color: #f0f8ff; /* Light blue background for unselected items */
+    color: #333; /* Text color */
+    border: 1px solid #ccc; /* Border for the labels */
+    border-radius: 5px;
+    padding: 5px 10px;
+    margin: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Hover effect for the labels */
+div.dash-radioitems label:hover {
+    background-color: #dae191; /* Slightly lighter blue on hover */
+}
+
+/* Styling for the active/checked radio button */
+div.dash-radioitems input[type="radio"]:checked + label {
+    background-color: #007bff; /* Blue background for active */
+    color: white; /* White text for active */
+    border-color: #0056b3; /* Darker border for active */
+}
+
+
+/* Styling Slider
+
+/* Style the slider track */
+.rc-slider-track {
+    background-color: #007bff; /* Blue for the track */
+}
+
+/* Style the slider handle (the circle that moves) */
+.rc-slider-handle {
+    border: 2px solid #007bff; /* Blue border */
+    background-color: white; /* White background for the handle */
+    width: 20px; /* Increase size for better visibility */
+    height: 20px;
+    margin-top: -8px; /* Adjust positioning */
+    cursor: pointer;
+}
+
+/* Change handle color on hover or focus */
+.rc-slider-handle:hover, 
+.rc-slider-handle:focus {
+    border-color: #0056b3; /* Darker blue on hover */
+}
+
+/* Style for the slider rail (background of the slider) */
+.rc-slider-rail {
+    background-color: #b0afaf; /* Light gray for the rail */
+    height: 6px;
+}
+
+/* Style for the marks */
+.rc-slider-mark-text {
+    color: #333; /* Default text color */
+    font-weight: bold; /* Make marks bold */
+}
+
+/* Style for active mark value */
+.rc-slider-mark-text-active {
+    color: #007bff; /* Blue for active marks */
+    font-weight: bold;
+}
+
+/* Style for the slider container */
+.dash-slider {
+    margin: 20px 0;
+}

@@ -1,0 +1,14 @@
+pandas
+plotly
+folium
+matplotlib
+shiny
+shinywidgets
+seaborn
+altair
+anywidget
+dash
+numpy
+scikit_learn
+gunicorn
+dash_mantine_components
