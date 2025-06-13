@@ -214,7 +214,7 @@ app.layout = dmc.MantineProvider(
                             ]),
                             #Interactive Map
                             html.Div(className="container", children=[
-                                dcc.Markdown("### Where are the requests being made? (Interactive!)", style={'textAlign': 'center'}),
+                                dcc.Markdown("### Where are the requests being made? (Click Hotspot!)", style={'textAlign': 'center'}),
                                 # Slider
                                 html.H4("Select minimum count to display"),
                                 dcc.Slider(
@@ -954,7 +954,7 @@ def folium_map(start_date, end_date, board, slide,choice,violation):
                 )
                 folium.CircleMarker(
                     location=(row["latitude"], row["longitude"]),
-                    radius=row['total'] / 15 + 3,
+                    radius=row['total'] / 10 + 5,
                     color=color,
                     popup = folium.Popup(popup_text, max_width=300),
                     fill=True
