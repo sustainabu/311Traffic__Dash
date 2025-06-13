@@ -59,7 +59,7 @@ app.layout = dmc.MantineProvider(
             # Burger button with a drawer
             dmc.Group([
                 dmc.Burger(id="burger-menu", opened=False,color="purple"),
-                dmc.Text("311 Traffic Enforcement Dashboard by Community Board", size="xl")
+                dmc.Text("311 NYC Traffic Enforcement Dashboard by Queens Community Board", size="xl")
             ], style={"alignItems": "center", "marginBottom": "20px", "backgroundColor": "#DABC94"}),
 
             # Drawer for navigation menu
