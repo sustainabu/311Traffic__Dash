@@ -59,7 +59,7 @@ app.layout = dmc.MantineProvider(
             # Burger button with a drawer
             dmc.Group([
                 dmc.Burger(id="burger-menu", opened=False,color="purple"),
-                dmc.Text("311 NYC Traffic Enforcement Dashboard by Queens Community Board", size="xl")
+                dmc.Text("2025 Queens 311 Traffic Enforcement Dashboard", size="xl")
             ], style={"alignItems": "center", "marginBottom": "20px", "backgroundColor": "#DABC94"}),
 
             # Drawer for navigation menu
@@ -92,7 +92,7 @@ app.layout = dmc.MantineProvider(
                             html.Div(
                                 [
                                     html.Span("Each record is a NYC 311 Service Request handled by local law enforcement (NYPD) "),
-                                    html.B(f"Last Updated: {update_date}")
+                                    html.B(f"Latest Data: {update_date}")
                                 ]
                             ),
                             html.Div(className="container", children=[
