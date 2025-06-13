@@ -25,7 +25,7 @@ _dash_renderer._set_react_version("18.2.0")
 #)
 
 # GitHub raw link to your parquet file
-url = "https://raw.githubusercontent.com/sustainabu/311Traffic__Dash/main/311traffic.parquet"
+url = "https://raw.githubusercontent.com/sustainabu/311Traffic__Dash/main/311trafficQ.parquet"
 
 # Fetch the file and load as DataFrame
 response = requests.get(url)
