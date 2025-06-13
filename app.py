@@ -51,7 +51,7 @@ app.layout = dmc.MantineProvider(
             # Burger button with a drawer
             dmc.Group([
                 dmc.Burger(id="burger-menu", opened=False,color="purple"),
-                dmc.Text("311 Traffic Enforcement Dashboard", size="xl")
+                dmc.Text("311 Traffic Enforcement Dashboard by Community Board", size="xl")
             ], style={"alignItems": "center", "marginBottom": "20px", "backgroundColor": "#DABC94"}),
 
             # Drawer for navigation menu
@@ -132,7 +132,7 @@ app.layout = dmc.MantineProvider(
                                 # Request Dropdown
                                 html.Div([
                                     dmc.Select(
-                                        id="dropdown",
+                                        id="violation",
                                         label="Select Violation",
                                         placeholder="Choose an option",
                                         data=[{"label": opt, "value": opt} for opt in request_options],
@@ -178,6 +178,32 @@ app.layout = dmc.MantineProvider(
                                         }),
                                 ]),
                             ]),
+                            # History Graph
+                            html.Div(className="container", children=[
+                                dcc.Markdown("### What are the trends?", style={'textAlign': 'center'}),
+                                html.Div([
+                                    dcc.RadioItems(
+                                        id="radio3",
+                                        options=[
+                                            {"label": "Requests", "value": "request"},
+                                            {"label": "InAction-Rate", "value": "inaction"},
+                                            {"label": "Hourly Requests", "value": "hour"},
+                                        ],
+                                        value="request",
+                                        inline=True,
+                                        className="dash-radioitems",
+                                    ),
+                                    dcc.Graph(
+                                        id="history",
+                                        config={
+                                            "scrollZoom": False,      # Disable zoom with scrolling
+                                            "doubleClick": "reset",  # Reset the plot on double-click
+                                            "displayModeBar": True,  # Enable the mode bar for other features
+                                            "staticPlot": True,
+                                            }
+                                    ),
+                                ]),
+                            ]),
                             #Interactive Map
                             html.Div(className="container", children=[
                                 dcc.Markdown("### Where are the requests being made? (Interactive!)", style={'textAlign': 'center'}),
@@ -199,8 +225,8 @@ app.layout = dmc.MantineProvider(
                                     dcc.RadioItems(
                                         id="radio4",
                                         options=[
-                                            {"label": "InAction-Rate*", "value": "inaction"},
-                                            {"label": "Response Time*", "value": "time"},
+                                            {"label": "InAction-Rate", "value": "inaction"},
+                                            {"label": "Response Time", "value": "time"},
                                         ],
                                         value="inaction",
                                         inline=True,
@@ -227,14 +253,14 @@ app.layout = dmc.MantineProvider(
                             ]),
                             # 311 Data Table
                             html.Div(className="container", children=[
-                                dcc.Markdown("### Recent 311 Blocked Bike Lane Service Requests", style={'textAlign': 'center'}),
+                                dcc.Markdown("### Latest 311 Service Requests", style={'textAlign': 'center'}),
 
                                 # Data Table
                                 dash_table.DataTable(
                                     id="recent-table",
                                     columns=[
                                         {"name": i, "id": i, "deletable": False, "selectable": True} for i in 
-                                        ['Date', 'Time', 'Address', 'Precinct', 'Resolution', 'Response_Mins']
+                                        ['Date', 'Time', 'Address', 'Precinct', 'Resolution', 'Response_Mins', 'Resolution_Full']
                                     ],
                                     style_table={
                                         'overflowX': 'auto', 
@@ -254,7 +280,7 @@ app.layout = dmc.MantineProvider(
                                         {'if': {'filter_query': '{Resolution} = "Late"'}, 'backgroundColor': '#ffb5c0'},
                                         {'if': {'filter_query': '{Resolution} = "Action"'}, 'backgroundColor': '#D5F5E3'},
                                         {'if': {'filter_query': '{Resolution} = "No-Action"'}, 'backgroundColor': '#ffdbbb'},
-                                        {'if': {'filter_query': '{Resolution} = "Summon"'}, 'backgroundColor': '#ADD8E6'}
+                                        {'if': {'filter_query': '{Resolution} = "Summon_Arrest"'}, 'backgroundColor': '#ADD8E6'}
                                     ],
                                     style_cell={
                                         'textAlign': 'left',
@@ -282,23 +308,15 @@ app.layout = dmc.MantineProvider(
                                         * The data is retrieved from [311 Service Requests]("https://data.cityofnewyork.us/Social-Services/311-Service-Requests-from-2010-to-Present/erm2-nwe9/about_data/") via NYC Open Data.
                                         * Each record is a **reported** violation.
                                         * NYPD response time is the difference between 311 opening and closing time.
-                                        * For call-density, I used a nearest neighbor matching algorithm on the closed date.
                                         * Dashboard Source Code is accessible on [Github](https://github.com/sustainabu/OpenDataNYC).
                                         ### Purpose
                                         --- 
-                                        * Investigative reporting provided evidence of NYPD [non-responsiveness](https://nyc.streetsblog.org/2024/10/29/study-exposes-nypds-systemic-failure-to-enforce-safety-related-parking-violations) and [malpractice](https://nyc.streetsblog.org/2023/04/06/nypd-tickets-fewer-than-2-of-blocked-bike-lane-complaints-analysis).
                                         * This is a community TOOL to monitor and measure progress.
-                                        * To learn more, check out my [Exploratory Report](https://nbviewer.org/github/sustainabu/OpenDataNYC/blob/main/311_BlockedBikeLane/BlockBikeLane%20Report_01_01_25.ipynb)
-                                        
-                                        ### Next Steps
-                                        ---
-                                        * I'm interested to explore using crowd-source validation as means to verify NYPD responses. If you are a developer, let's chat.
-                                        * Partner with local community organizations for an intentional campaign to improve biking violation enforcement.
-                                        * Advocate for protected bike lanes over unprotected bike lanes.
+                                        * Evaluate police responses 
                                              
                                         ### About Me
                                         ---
-                                        * My name is Abu Nayeem. I'm a community advocate and Jamaica, Queens resident.
+                                        * My name is Abu Nayeem. I'm a transportation advocate and Jamaica, Queens resident.
                                         * I'm trained as an economist (MS Economics in UC Berkeley) and self-learned programmer.
                                         * Contact Me (anayeem1@gmail.com)
                                     '''
@@ -320,23 +338,25 @@ app.layout = dmc.MantineProvider(
     Output("pie", "figure"),
     [Input('start-date', 'value'), 
      Input('end-date', 'value'), 
-     Input("dropdown", "value")
+     Input("dropdown", "value"),
+     Input("violation", "value")
      ]
 )
-def update_graph(start_date, end_date, board):
+def update_graph(start_date, end_date, board, violation):
     # Ensure start_date and end_date are valid
     if start_date is None:
-        start_date = date(2023, 1, 1)  # Default to the minimum date in the dataset
+        start_date = date(2025, 1, 1)  # Default to the minimum date in the dataset
     else:
         start_date = pd.to_datetime(start_date).date()
 
     if end_date is None:
-        end_date = date(2024, 12, 31)  # Default to the maximum date in the dataset
+        end_date = date(2025, 6, 11)  # Default to the maximum date in the dataset
     else:
         end_date = pd.to_datetime(end_date).date()
 
     # Apply all filters: community board and date range
     filtered_df = df.copy()
+    filtered_df = filtered_df[filtered_df["descriptor"] == violation]
     if board != "All":
         filtered_df = filtered_df[filtered_df["cboard_expand"] == board]
 
@@ -358,7 +378,7 @@ def update_graph(start_date, end_date, board):
         "Late": "#FF474C",
         "No-Action": "#FFA53F",
         "Action": "lightgreen",
-        "Summon": "#63e5ff"  # Adjust as per your categories
+        "Summon_Arrest": "#63e5ff"  # Adjust as per your categories
     }
 
     # Check if filtered_df is empty
@@ -409,23 +429,25 @@ def update_graph(start_date, end_date, board):
     [Input('start-date', 'value'), 
      Input('end-date', 'value'), 
      Input("dropdown", "value"),
+     Input("violation", "value"),
      Input("radio1", "value")
      ]
 )
-def bar_graph(start_date, end_date, board, choice):
+def bar_graph(start_date, end_date, board, violation, choice):
     # Ensure start_date and end_date are valid
     if start_date is None:
-        start_date = date(2023, 1, 1)  # Default to the minimum date in the dataset
+        start_date = date(2025, 1, 1)  # Default to the minimum date in the dataset
     else:
         start_date = pd.to_datetime(start_date).date()
 
     if end_date is None:
-        end_date = date(2024, 12, 31)  # Default to the maximum date in the dataset
+        end_date = date(2025, 6, 11)  # Default to the maximum date in the dataset
     else:
         end_date = pd.to_datetime(end_date).date()
 
     # Apply all filters: community board and date range
     filtered_df = df.copy()
+    filtered_df = filtered_df[filtered_df["descriptor"] == violation]
     if board != "All":
         filtered_df = filtered_df[filtered_df["cboard_expand"] == board]
 
@@ -442,7 +464,7 @@ def bar_graph(start_date, end_date, board, choice):
             return "All"
     
     # Predefined resolution categories and elapsed minute bins    
-    all_resolutions = ["Action", "Late", "No-Action", "Summon"]  # Add all possible resolution values here
+    all_resolutions = ["Action", "Late", "No-Action", "Summon_Arrest"]  # Add all possible resolution values here
     elapsed_bins = ["min0->5", "min5->30", "min30->60", "min60->360", "min360+"]  # Define all bins
 
     # Step 1: Aggregate Total, Median, and Mean
@@ -574,7 +596,7 @@ def bar_graph(start_date, end_date, board, choice):
         textposition='inside',  # Position the text inside the bars
     ))
 
-    quarters = ['All','Summon','Action','No-Action','Late']
+    quarters = ['All','Summon_Arrest','Action','No-Action','Late']
 
     fig2.update_layout(
         xaxis=dict(ticksuffix='%'),
@@ -603,6 +625,184 @@ def bar_graph(start_date, end_date, board, choice):
     #Select by Radio Button
     return fig2 if choice != "stat" else fig1
 
+#c4 History    
+@callback(
+    Output("history", "figure"),
+    [Input('start-date', 'date'), 
+     Input('end-date', 'date'), 
+     Input("dropdown", "value"),
+     Input("radio3", "value"),
+     Input("violation", "value")
+     ]
+)
+def history_graph(start_date, end_date, board, choice, violation):
+    # Ensure start_date and end_date are valid
+    if start_date is None:
+        start_date = date(2025, 1, 1)  # Default to the minimum date in the dataset
+    else:
+        start_date = pd.to_datetime(start_date).date()
+
+    if end_date is None:
+        end_date = date(2025, 6, 11)  # Default to the maximum date in the dataset
+    else:
+        end_date = pd.to_datetime(end_date).date()
+
+    # Apply all filters: community board and date range
+    filtered_df = df.copy()
+    filtered_df = filtered_df[filtered_df["descriptor"] == violation]
+    if board != "All":
+        filtered_df = filtered_df[filtered_df["cboard_expand"] == board]
+
+    filtered_df = filtered_df[
+        (filtered_df["dateTime"] >= start_date) &
+        (filtered_df["dateTime"] <= end_date)
+    ]
+
+    # Shortcut Renaming
+    def boardT():
+        if board != "All":
+            return board.split(':')[0]
+        else:
+            return "All"
+
+    custom_palette = [ "#ff7f0e","#1f77b4", "#2ca02c", "#d62728", "#9467bd"]
+    current_year = filtered_df.Year.max() 
+
+    #filtered_df["Inaction"]= filtered_df["Late"] + filtered_df["No-Action"]
+    
+
+    # Get Total by Precinct
+    p=['WeekBin', 'Year','Late', 'No-Action','index_']
+    df1=filtered_df[p].groupby(['WeekBin','Year']).sum().reset_index()
+    df1.columns=['WeekBin','Year','Late','No-Action','total']
+    df1['InAction_Rate']= round((df1['Late'] +df1['No-Action']) / df1['total'],2)
+
+
+
+    # Choose plot data based on radio choice
+    if choice == 'request':
+        bg = filtered_df.groupby(['WeekBin', 'Year'])['index_'].sum().unstack()
+        traces = []
+        nl = '<br>'  # HTML line break for Plotly titles
+        for year in bg.columns:
+            linestyle = 'solid' if year == current_year else 'dash'
+            traces.append(go.Scatter(
+                x=bg.index, y=bg[year],
+                mode='lines',
+                name=str(year),
+                line=dict(dash=linestyle, color=custom_palette[year % len(custom_palette)])
+            ))
+        title = f"<b>Requests History for {boardT()}{nl}from {start_date} to {end_date}</b>"
+
+        # Create Plotly figure
+        figure = go.Figure(data=traces)
+        figure.update_layout(
+            title=dict(
+                text=title,
+                font=dict(size=14),  # Adjust font size
+                x=0.5,               # Center align the title
+                xanchor='center',
+                yanchor='top',
+            ),
+            xaxis_title='WeekBin (0 = beginning of year)',
+            yaxis_title='',
+            legend_title='',
+            template='plotly_white',
+            legend=dict(
+                orientation='h',  # Horizontal legend
+                yanchor='bottom',
+                y=-0.25,  # Position below the chart
+                xanchor='center',
+                x=0.5,  # Centered horizontally
+                traceorder='normal'
+            ),
+            margin=dict(l=10, r=10, t=80, b=10)  # Add padding to the top with `t`
+        )
+
+    elif choice == 'hour':
+        nl = '<br>'  # HTML line break for Plotly
+
+        # Ensure 'Hour' column exists
+        filtered_df['Hour'] = pd.to_datetime(filtered_df['dateTimeO']).dt.hour
+
+        # Group by Hour of Day (0–23), fill in missing hours with 0
+        counts = filtered_df.groupby('Hour').size().reindex(range(24), fill_value=0)
+
+        # Use Bar chart instead of Scatter
+        traces = [go.Bar(
+            x=counts.index,  # 0–23 hours
+            y=counts.values,
+            name='Hourly Requests',
+            marker_color=custom_palette[0]  # Choose color
+        )]
+
+        # Chart title
+        title = f"<b>Hourly Requests for {boardT()}{nl}from {start_date} to {end_date}</b>"
+
+        # Create Plotly figure
+        figure = go.Figure(data=traces)
+        figure.update_layout(
+            title=dict(
+                text=title,
+                font=dict(size=14),
+                x=0.5,
+                xanchor='center',
+                yanchor='top',
+            ),
+            xaxis=dict(
+                title='Hour of Day (0–23)',
+                dtick=1  # Show all hours on x-axis
+            ),
+            yaxis=dict(
+                title='Number of Requests'
+            ),
+            legend_title='',
+            template='plotly_white',
+            margin=dict(l=10, r=10, t=80, b=10)
+        )
+
+    else:
+        traces = []
+        nl = '<br>'  # HTML line break for Plotly titles
+        for year in df1['Year'].unique():
+            df_year = df1[df1['Year'] == year]
+            linestyle = 'solid' if year == current_year else 'dash'
+            traces.append(go.Scatter(
+                x=df_year['WeekBin'], y=df_year['InAction_Rate'],
+                mode='lines',
+                name=str(year),
+                line=dict(dash=linestyle, color=custom_palette[year % len(custom_palette)])
+            ))
+        title = f"<b>InAction Rate History for {boardT()}{nl} from {start_date} to {end_date}</b>"
+
+        # Create Plotly figure
+        figure = go.Figure(data=traces)
+        figure.update_layout(
+            title=dict(
+                text=title,
+                font=dict(size=14),  # Adjust font size
+                x=0.5,               # Center align the title
+                xanchor='center',
+                yanchor='top',
+            ),
+            xaxis_title='WeekBin (0 = beginning of year)',
+            yaxis_title='',
+            legend_title='',
+            legend=dict(
+                orientation='h',  # Horizontal legend
+                yanchor='bottom',
+                y=-0.25,  # Position below the chart
+                xanchor='center',
+                x=0.5,  # Centered horizontally
+                traceorder='normal'
+            ),
+            template='plotly_white',
+            margin=dict(l=10, r=10, t=80, b=10)  # Add padding to the top with `t`
+            
+        )
+    return figure
+
+
 
 #Callback for Folium Map
 @callback(
@@ -611,27 +811,25 @@ def bar_graph(start_date, end_date, board, choice):
      Input('end-date', 'value'), 
      Input("dropdown", "value"),
      Input("slider", "value"),
-     Input("radio4", "value")
+     Input("radio4", "value"),
+     Input("violation", "value")
      ]
 )
-def folium_map(start_date, end_date, board, slide,choice):
-
+def folium_map(start_date, end_date, board, slide,choice,violation):
     # Ensure start_date and end_date are valid
     if start_date is None:
-        start_date = date(2023, 1, 1)  # Default to the minimum date in the dataset
+        start_date = date(2025, 1, 1)  # Default to the minimum date in the dataset
     else:
         start_date = pd.to_datetime(start_date).date()
 
     if end_date is None:
-        end_date = date(2024, 12, 31)  # Default to the maximum date in the dataset
+        end_date = date(2025, 6, 11)  # Default to the maximum date in the dataset
     else:
         end_date = pd.to_datetime(end_date).date()
 
-    # Select only unique values
-    dfc_unique= df.query('MinutesElapsed==MaxR_Mins')
-
     # Apply all filters: community board and date range
-    filtered_df = dfc_unique.copy()
+    filtered_df = df.copy()
+    filtered_df = filtered_df[filtered_df["descriptor"] == violation]
     if board != "All":
         filtered_df = filtered_df[filtered_df["cboard_expand"] == board]
 
@@ -639,6 +837,7 @@ def folium_map(start_date, end_date, board, slide,choice):
         (filtered_df["dateTime"] >= start_date) &
         (filtered_df["dateTime"] <= end_date)
     ]
+
 
     # Calculate midpoint of latitude and longitude
     latitude_mid = (filtered_df.latitude.max() + filtered_df.latitude.min()) / 2
@@ -679,7 +878,7 @@ def folium_map(start_date, end_date, board, slide,choice):
     cv2=pd.pivot_table(cv,index='UAdd', columns='resolution', values=['index_']).reset_index().fillna(0)
 
     #CHECK ORDER OF COLUMNS- Alphabetical
-    cv2.columns=['UAdd','Action','Late','No-Action','Summon']
+    cv2.columns=['UAdd','Action','Late','No-Action','Summon_Arrest']
     B= pd.merge(c1, cv2, on='UAdd', how='right')
 
     # to get median
@@ -743,7 +942,7 @@ def folium_map(start_date, end_date, board, slide,choice):
                     f"Late#: {row['Late']}<br>"
                     f"No-Action#: {row['No-Action']}<br>"
                     f"Action#: {row['Action']}<br>"
-                    f"Summon#: {row['Summon']}"
+                    f"Summon_Arrest#: {row['Summon_Arrest']}"
                 )
                 folium.CircleMarker(
                     location=(row["latitude"], row["longitude"]),
@@ -791,9 +990,11 @@ def folium_map(start_date, end_date, board, slide,choice):
     Output("recent-table", "data"),
     [Input('start-date', 'value'), 
      Input('end-date', 'value'), 
-     Input("dropdown", "value")]
+     Input("dropdown", "value"),
+     Input("violation", "value")
+     ]
 )
-def recent_table(start_date, end_date, board):
+def recent_table(start_date, end_date, board, violation):
     # Ensure start_date and end_date are valid
     if start_date is None:
         start_date = date(2025, 1, 1)  # Default to the minimum date in the dataset
@@ -807,6 +1008,7 @@ def recent_table(start_date, end_date, board):
 
     # Apply all filters: community board and date range
     filtered_df = df.copy()
+    filtered_df = filtered_df[filtered_df["descriptor"] == violation]
     if board != "All":
         filtered_df = filtered_df[filtered_df["cboard_expand"] == board]
 
@@ -816,7 +1018,7 @@ def recent_table(start_date, end_date, board):
     ]
 
     # Select relevant columns for the table
-    recent_df = filtered_df[['dateTime', 'Time', 'incident_address','precinct','resolution', 'MinutesElapsed', 'Resolution_desc']]
+    recent_df = filtered_df[['dateTime', 'Time', 'incident_address','precinct','resolution', 'MinutesElapsed', 'resolution_description']]
     recent_df.columns = ['Date', 'Time','Address','Precinct', 'Resolution', 'Response_Mins', 'Resolution_Full']
     
     return recent_df.to_dict('records')
