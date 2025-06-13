@@ -10,6 +10,7 @@ import plotly.express as px
 import pandas as pd
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
+import requests
 import folium
 import io
 from io import BytesIO
@@ -19,9 +20,16 @@ import base64
 _dash_renderer._set_react_version("18.2.0")
 
 # Load data
-df = pd.read_csv(
-    "https://raw.githubusercontent.com/sustainabu/311Traffic__Dash/main/data.csv.gz"
-)
+#df = pd.read_csv(
+#    "https://raw.githubusercontent.com/sustainabu/311Traffic__Dash/main/data.csv.gz"
+#)
+
+# GitHub raw link to your parquet file
+url = "https://raw.githubusercontent.com/sustainabu/311Traffic__Dash/main/311traffic.parquet"
+
+# Fetch the file and load as DataFrame
+response = requests.get(url)
+df = pd.read_parquet(BytesIO(response.content), engine='pyarrow')
 
 # Data type adjustments
 df["dateTime"] = pd.to_datetime(df["dateTime"]).dt.date
