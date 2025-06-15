@@ -1,3 +1,4 @@
+
 #Load Libraries
 import sys
 print(sys.executable)
@@ -262,14 +263,7 @@ app.layout = dmc.MantineProvider(
                             # 311 Data Table
                             html.Div(className="container", children=[
                                 dcc.Markdown("### Latest 311 Service Requests", style={'textAlign': 'center'}),
-                                # Button Row
-                                dmc.Group(
-                                    children=[
-                                        dmc.Button("Download CSV", id="download-button", color="blue", variant="filled"),
-                                        dcc.Download(id="download-data")
-                                    ],
-                                    style={"marginBottom": "10px", "justifyContent": "flex-end", "display": "flex"}
-                                ),
+
                                 # Data Table
                                 dash_table.DataTable(
                                     id="recent-table",
@@ -309,6 +303,10 @@ app.layout = dmc.MantineProvider(
                                     sort_action='native',
                                     fixed_rows={'headers': False},  # Disable fixed headers for mobile scrolling
                                 ),
+                                dmc.Group([
+                                    dmc.Button("Download CSV", id="download-button", color="blue", variant="filled"),
+                                    dcc.Download(id="download-data")
+                                ], position="right", style={"marginBottom": "10px", "marginTop": "10px"}),
                             ], style={'width': '80%', 'margin': 'auto'})
                         ],
                     ),
@@ -550,25 +548,14 @@ def bar_graph(start_date, end_date, board, violation, choice):
         )
     
     fig1 = go.Figure(data=[
-        go.Bar(
-            name='Median',
-            x=final_df['Police_resolution'],
-            y=final_df['Median_Mins'],
-            hovertemplate='Resolution: %{x}<br>Median: %{y:.2f} mins<extra></extra>'
-        ),
-        go.Bar(
-            name='Mean',
-            x=final_df['Police_resolution'],
-            y=final_df['Mean_Mins'],
-            hovertemplate='Resolution: %{x}<br>Mean: %{y:.2f} mins<extra></extra>'
-        )
+    go.Bar(name='Median', x=final_df['Police_resolution'], y=final_df['Median_Mins']),
+    go.Bar(name='Mean', x=final_df['Police_resolution'], y=final_df['Mean_Mins'])
     ])
 
     fig1.update_layout(
         barmode='group',
         title=f"Response Time (Minutes) for {boardT()}",
         title_x=0.5,
-        hovermode='x',
         legend=dict(
             orientation='h',  # Horizontal legend
             yanchor='bottom',
@@ -972,7 +959,7 @@ def folium_map(start_date, end_date, board, slide,choice,violation):
                 )
                 folium.CircleMarker(
                     location=(row["latitude"], row["longitude"]),
-                    radius=row['total'] / 12 + 4,
+                    radius=row['total'] / 10 + 5,
                     color=color,
                     popup = folium.Popup(popup_text, max_width=300),
                     fill=True
@@ -1003,7 +990,7 @@ def folium_map(start_date, end_date, board, slide,choice,violation):
                 )
                 folium.CircleMarker(
                     location=(row["latitude"], row["longitude"]),
-                    radius=row['total'] / 12 + 4,
+                    radius=row['total'] / 15 + 3,
                     color=color,
                     popup = folium.Popup(popup_text, max_width=300),
                     fill=True
@@ -1207,11 +1194,13 @@ def highlight_menu_item(tab1_clicks, tab2_clicks):
     State("recent-table", "data"),
     prevent_initial_call=True,
 )
-def download_csv(n_clicks, table_data, violation):
-    filename = f"311_{violation.replace(' ', '_')}_Requests.csv" if violation else "311_Requests.csv"
-    return dcc.send_data_frame(pd.DataFrame(table_data).to_csv, filename, index=False)
+def download_csv(n_clicks, table_data):
+    if not table_data:
+        raise PreventUpdate
+    df = pd.DataFrame(table_data)
+    return dcc.send_data_frame(df.to_csv, "311_Recent_Requests.csv", index=False)
+
 
 # Run the app
 if __name__ == "__main__":
-    app.run(debug=True)
-
+    app.run_server(debug=True)
